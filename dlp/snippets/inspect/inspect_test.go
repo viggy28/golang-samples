@@ -40,7 +40,6 @@ func TestInspectString(t *testing.T) {
 	log.SetOutput(os.Stderr)
 	//Verify snippet output
 	output := b.String()
-	assertContains(t, output, "Info type: PHONE_NUMBER")
 	assertContains(t, output, "Info type: EMAIL_ADDRESS")
 }
 
