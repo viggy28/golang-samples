@@ -5,11 +5,11 @@
 package inspect
 
 import (
-	"testing"
+	"bytes"
 	"log"
 	"os"
-	"bytes"
 	"strings"
+	"testing"
 
 	"github.com/GoogleCloudPlatform/golang-samples/internal/testutil"
 )

@@ -7,9 +7,9 @@ package inspect
 // [START dlp_inspect_file]
 import (
 	"context"
-	"io/ioutil"
-	"fmt"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"log"
 
 	"cloud.google.com/go/dlp/apiv2"
