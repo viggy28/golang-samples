@@ -1,6 +1,16 @@
-// Copyright 2016 Google Inc. All rights reserved.
-// Use of this source code is governed by the Apache 2.0
-// license that can be found in the LICENSE file.
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Sample endpoints demonstrates a Cloud Endpoints API.
 package main
@@ -12,7 +22,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -33,11 +42,17 @@ func main() {
 		HandlerFunc(authInfoHandler)
 
 	http.Handle("/", r)
-	port := 8080
-	if portStr := os.Getenv("PORT"); portStr != "" {
-		port, _ = strconv.Atoi(portStr)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("Defaulting to port %s", port)
 	}
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+
+	log.Printf("Listening on port %s", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // echoHandler reads a JSON object from the body, and writes it back out.
@@ -72,6 +87,8 @@ func (h corsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h(w, r)
 }
 
+// [START endpoints_auth_info_backend]
+
 // authInfoHandler reads authentication info provided by the Endpoints proxy.
 func authInfoHandler(w http.ResponseWriter, r *http.Request) {
 	encodedInfo := r.Header.Get("X-Endpoint-API-UserInfo")
@@ -87,6 +104,8 @@ func authInfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(b)
 }
+
+// [END endpoints_auth_info_backend]
 
 // errorf writes a swagger-compliant error response.
 func errorf(w http.ResponseWriter, code int, format string, a ...interface{}) {

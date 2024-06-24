@@ -1,6 +1,16 @@
-// Copyright 2018 Google Inc. All rights reserved.
-// Use of this source code is governed by the Apache 2.0
-// license that can be found in the LICENSE file.
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Command gimmeproj provides access to a pool of projects.
 //
@@ -22,6 +32,7 @@ import (
 
 var (
 	metaProject = flag.String("project", "", "Meta-project that manages the pool.")
+	format      = flag.String("output", "", "Output format for selected operations. Options include: list")
 	datastore   *ds.Client
 
 	version   = "dev"
@@ -92,6 +103,7 @@ func submain() error {
 	usage := errors.New(`
 Usage:
 	gimmeproj -project=[meta project ID] command
+	gimmeproj -project=[meta project ID] -output=list status
 
 Commands:
 	lease [duration]    Leases a project for a given duration. Prints the project ID to stdout.
@@ -101,7 +113,7 @@ Commands:
 Administrative commands:
 	pool-add [project ID]       Adds a project to the pool.
 	pool-rm  [project ID]       Removes a project from the pool.
-	status                      Displays the current status of the meta project.
+	status                      Displays the current status of the meta project. Respects -output.
 `)
 
 	if flag.Arg(0) == "version" {
@@ -220,14 +232,23 @@ func done(ctx context.Context, projectID string) error {
 
 func status(ctx context.Context) error {
 	return withPool(ctx, func(pool *Pool) error {
-		fmt.Printf("%-8s %s\n", "LEASE", "PROJECT")
+		if *format == "" {
+			fmt.Printf("%-8s %s\n", "LEASE", "PROJECT")
+		}
 		for _, proj := range pool.Projects {
 			exp := ""
 			if !proj.Expired() {
 				secs := proj.LeaseExpiry.Sub(time.Now()) / time.Second * time.Second
 				exp = secs.String()
 			}
-			fmt.Printf("%-8s %s\n", exp, proj.ID)
+			switch *format {
+			case "":
+				fmt.Printf("%-8s %s\n", exp, proj.ID)
+			case "list":
+				fmt.Printf("%s\n", proj.ID)
+			default:
+				return errors.New("output may be '', 'list'")
+			}
 		}
 		return nil
 	})

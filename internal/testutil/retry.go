@@ -1,6 +1,16 @@
-// Copyright 2016 Google Inc. All rights reserved.
-// Use of this source code is governed by the Apache 2.0
-// license that can be found in the LICENSE file.
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package testutil
 
@@ -33,6 +43,31 @@ func Retry(t *testing.T, maxAttempts int, sleep time.Duration, f func(r *R)) boo
 		if attempt == maxAttempts {
 			t.Logf("FAILED after %d attempts:%s", attempt, r.log.String())
 			t.Fail()
+		}
+
+		time.Sleep(sleep)
+	}
+	return false
+}
+
+// RetryWithoutTest is a variant of Retry that does not use a testing parameter.
+// It is meant for testing utilities that do not pass around the testing context, such as cloudrunci.
+func RetryWithoutTest(maxAttempts int, sleep time.Duration, f func(r *R)) bool {
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		r := &R{Attempt: attempt, log: &bytes.Buffer{}}
+
+		f(r)
+
+		if !r.failed {
+			if r.log.Len() != 0 {
+				r.Logf("Success after %d attempts:%s", attempt, r.log.String())
+			}
+			return true
+		}
+
+		if attempt == maxAttempts {
+			r.Logf("FAILED after %d attempts:%s", attempt, r.log.String())
+			return false
 		}
 
 		time.Sleep(sleep)

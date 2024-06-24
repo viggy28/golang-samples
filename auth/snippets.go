@@ -1,6 +1,16 @@
-// Copyright 2016 Google Inc. All rights reserved.
-// Use of this source code is governed by the Apache 2.0
-// license that can be found in the LICENSE file.
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package authsnippets contains Google Cloud authentication snippets.
 package authsnippets
@@ -30,6 +40,7 @@ func implicit() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer storageClient.Close()
 
 	it := storageClient.Buckets(ctx, "project-id")
 	for {
@@ -44,14 +55,8 @@ func implicit() {
 	}
 
 	// For packages whose import path is starting with "google.golang.org/api",
-	// such as google.golang.org/api/cloudkms/v1, use the
-	// golang.org/x/oauth2/google package as shown below.
-	oauthClient, err := google.DefaultClient(ctx, cloudkms.CloudPlatformScope)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	kmsService, err := cloudkms.New(oauthClient)
+	// such as google.golang.org/api/cloudkms/v1, use NewService to create the client.
+	kmsService, err := cloudkms.NewService(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,6 +75,7 @@ func explicit(jsonPath, projectID string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer client.Close()
 	fmt.Println("Buckets:")
 	it := client.Buckets(ctx, projectID)
 	for {
@@ -105,6 +111,7 @@ func explicitDefault(projectID string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer client.Close()
 	fmt.Println("Buckets:")
 	it := client.Buckets(ctx, projectID)
 	for {

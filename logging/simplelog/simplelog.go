@@ -1,6 +1,16 @@
-// Copyright 2016 Google Inc. All rights reserved.
-// Use of this source code is governed by the Apache 2.0
-// license that can be found in the LICENSE file.
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Sample simplelog writes some entries, lists them, then deletes the log.
 package main
@@ -38,11 +48,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create logging client: %v", err)
 	}
+	defer client.Close()
 
 	adminClient, err := logadmin.NewClient(ctx, projID)
 	if err != nil {
 		log.Fatalf("Failed to create logadmin client: %v", err)
 	}
+	defer adminClient.Close()
 
 	client.OnError = func(err error) {
 		// Print an error to the local log.
@@ -83,18 +95,17 @@ func main() {
 }
 
 func writeEntry(client *logging.Client) {
-	// [START logging_write_log_entry]
 	const name = "log-example"
 	logger := client.Logger(name)
 	defer logger.Flush() // Ensure the entry is written.
 
 	infolog := logger.StandardLogger(logging.Info)
 	infolog.Printf("infolog is a standard Go log.Logger with INFO severity.")
-	// [END logging_write_log_entry]
 }
 
 func structuredWrite(client *logging.Client) {
 	// [START write_structured_log_entry]
+	// [START logging_write_log_entry]
 	const name = "log-example"
 	logger := client.Logger(name)
 	defer logger.Flush() // Ensure the entry is written.
@@ -107,6 +118,7 @@ func structuredWrite(client *logging.Client) {
 		Severity: logging.Debug,
 	})
 	// [END logging_write_log_entry]
+	// [END write_structured_log_entry]
 }
 
 func deleteLog(adminClient *logadmin.Client) error {
@@ -127,9 +139,11 @@ func getEntries(adminClient *logadmin.Client, projID string) ([]*logging.Entry, 
 	// [START logging_list_log_entries]
 	var entries []*logging.Entry
 	const name = "log-example"
+	lastHour := time.Now().Add(-1 * time.Hour).Format(time.RFC3339)
+
 	iter := adminClient.Entries(ctx,
-		// Only get entries from the log-example log.
-		logadmin.Filter(fmt.Sprintf(`logName = "projects/%s/logs/%s"`, projID, name)),
+		// Only get entries from the "log-example" log within the last hour.
+		logadmin.Filter(fmt.Sprintf(`logName = "projects/%s/logs/%s" AND timestamp > "%s"`, projID, name, lastHour)),
 		// Get most recent entries first.
 		logadmin.NewestFirst(),
 	)

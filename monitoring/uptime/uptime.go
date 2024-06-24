@@ -1,12 +1,23 @@
-// Copyright 2018 Google Inc. All rights reserved.
-// Use of this source code is governed by the Apache 2.0
-// license that can be found in the LICENSE file.
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package uptime contains samples of uptime checks.
 package uptime
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 
@@ -20,8 +31,8 @@ import (
 
 // [START monitoring_uptime_check_create]
 
-// create creates an example uptime check.
-func create(w io.Writer, projectID string) (*monitoringpb.UptimeCheckConfig, error) {
+// createGet creates an example uptime check on a GET request.
+func createGet(w io.Writer, projectID string) (*monitoringpb.UptimeCheckConfig, error) {
 	ctx := context.Background()
 	client, err := monitoring.NewUptimeCheckClient(ctx)
 	if err != nil {
@@ -31,7 +42,7 @@ func create(w io.Writer, projectID string) (*monitoringpb.UptimeCheckConfig, err
 	req := &monitoringpb.CreateUptimeCheckConfigRequest{
 		Parent: "projects/" + projectID,
 		UptimeCheckConfig: &monitoringpb.UptimeCheckConfig{
-			DisplayName: "new uptime check",
+			DisplayName: "new GET uptime check",
 			Resource: &monitoringpb.UptimeCheckConfig_MonitoredResource{
 				MonitoredResource: &monitoredres.MonitoredResource{
 					Type: "uptime_url",
@@ -42,8 +53,9 @@ func create(w io.Writer, projectID string) (*monitoringpb.UptimeCheckConfig, err
 			},
 			CheckRequestType: &monitoringpb.UptimeCheckConfig_HttpCheck_{
 				HttpCheck: &monitoringpb.UptimeCheckConfig_HttpCheck{
-					Path: "/",
-					Port: 80,
+					RequestMethod: monitoringpb.UptimeCheckConfig_HttpCheck_GET,
+					Path:          "/",
+					Port:          80,
 				},
 			},
 			Timeout: &duration.Duration{Seconds: 10},
@@ -52,9 +64,50 @@ func create(w io.Writer, projectID string) (*monitoringpb.UptimeCheckConfig, err
 	}
 	config, err := client.CreateUptimeCheckConfig(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("CreateUptimeCheckConfig: %v", err)
+		return nil, fmt.Errorf("CreateUptimeCheckConfig GET: %v", err)
 	}
-	fmt.Fprintf(w, "Successfully created uptime check %q\n", config.GetDisplayName())
+	fmt.Fprintf(w, "Successfully created GET uptime check %q\n", config.GetDisplayName())
+	return config, nil
+}
+
+// createPost creates an example uptime check on a POST request.
+func createPost(w io.Writer, projectID string) (*monitoringpb.UptimeCheckConfig, error) {
+	ctx := context.Background()
+	client, err := monitoring.NewUptimeCheckClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("NewUptimeCheckClient: %v", err)
+	}
+	defer client.Close()
+	req := &monitoringpb.CreateUptimeCheckConfigRequest{
+		Parent: "projects/" + projectID,
+		UptimeCheckConfig: &monitoringpb.UptimeCheckConfig{
+			DisplayName: "new POST uptime check",
+			Resource: &monitoringpb.UptimeCheckConfig_MonitoredResource{
+				MonitoredResource: &monitoredres.MonitoredResource{
+					Type: "uptime_url",
+					Labels: map[string]string{
+						"host": "example.com",
+					},
+				},
+			},
+			CheckRequestType: &monitoringpb.UptimeCheckConfig_HttpCheck_{
+				HttpCheck: &monitoringpb.UptimeCheckConfig_HttpCheck{
+					RequestMethod: monitoringpb.UptimeCheckConfig_HttpCheck_POST,
+					ContentType:   monitoringpb.UptimeCheckConfig_HttpCheck_URL_ENCODED,
+					Path:          "/",
+					Port:          80,
+					Body:          []byte(base64.URLEncoding.EncodeToString([]byte("key: value"))),
+				},
+			},
+			Timeout: &duration.Duration{Seconds: 10},
+			Period:  &duration.Duration{Seconds: 300},
+		},
+	}
+	config, err := client.CreateUptimeCheckConfig(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("CreateUptimeCheckConfig POST: %v", err)
+	}
+	fmt.Fprintf(w, "Successfully created POST uptime check %q\n", config.GetDisplayName())
 	return config, nil
 }
 

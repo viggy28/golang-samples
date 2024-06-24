@@ -1,6 +1,16 @@
-// Copyright 2018 Google Inc. All rights reserved.
-// Use of this source code is governed by the Apache 2.0
-// license that can be found in the LICENSE file.
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // [START asset_quickstart_export_assets]
 
@@ -8,13 +18,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 
-	asset "cloud.google.com/go/asset/v1beta1"
-	"golang.org/x/net/context"
-	assetpb "google.golang.org/genproto/googleapis/cloud/asset/v1beta1"
+	asset "cloud.google.com/go/asset/apiv1"
+	assetpb "google.golang.org/genproto/googleapis/cloud/asset/v1"
 )
 
 func main() {
@@ -24,6 +34,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer client.Close()
 	bucketName := fmt.Sprintf("%s-for-assets", projectID)
 	assetDumpFile := fmt.Sprintf("gs://%s/my-assets.txt", bucketName)
 	req := &assetpb.ExportAssetsRequest{
@@ -31,7 +42,9 @@ func main() {
 		OutputConfig: &assetpb.OutputConfig{
 			Destination: &assetpb.OutputConfig_GcsDestination{
 				GcsDestination: &assetpb.GcsDestination{
-					Uri: string(assetDumpFile),
+					ObjectUri: &assetpb.GcsDestination_Uri{
+						Uri: string(assetDumpFile),
+					},
 				},
 			},
 		},
